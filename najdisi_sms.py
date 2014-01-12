@@ -5,7 +5,6 @@ import json
 import time
 import urllib
 import urllib2
-import httplib
 import cookielib
 from optparse import OptionParser
 
@@ -14,18 +13,34 @@ import mechanize
 
 def main():
     parser = OptionParser(usage="%prog [options] who msg")
-    parser.add_option("-u", "--username", dest="username", help=u"Uporabniško ime")
-    parser.add_option("-p", "--password", dest="password", help=u"Geslo")
-    parser.add_option("-A", "--useragent", dest="useragent", help=u"HTTP User Agent",
-        default="Mozilla/5.0 (Windows; U; Windows NT 6.1; es-ES; rv:1.9.2.3) Gecko/20100401 Firefox/3.6.3")
+    parser.add_option(
+        "-u",
+        "--username",
+        dest="username",
+        help=u"Uporabniško ime"
+    )
+    parser.add_option(
+        "-p",
+        "--password",
+        dest="password",
+        help=u"Geslo"
+    )
+    parser.add_option(
+        "-A",
+        "--useragent",
+        dest="useragent",
+        help=u"HTTP User Agent",
+        default="Mozilla/5.0 (Windows; U; Windows NT 6.1; es-ES; rv:1.9.2.3)" +
+        "Gecko/20100401 Firefox/3.6.3"
+    )
     (options, args) = parser.parse_args()
     who = args.pop(0)
     msg = ' '.join(args)
 
     # don't change
-    temp_recipent=who.strip().replace(' ', '')[3:]
-    recipent=temp_recipent[:3] + ' ' + temp_recipent[3:]
-    base_code=int(who[1:3])
+    temp_recipent = who.strip().replace(' ', '')[3:]
+    recipent = temp_recipent[:3] + ' ' + temp_recipent[3:]
+    base_code = int(who[1:3])
 
     if len(msg) > 160:
         raise Exception('predolgo sporocilo')
@@ -60,7 +75,7 @@ def main():
     while len(chkcookie) < 13:
         chkcookie += '0'
 
-    data=urllib.urlencode({
+    data = urllib.urlencode({
         'sms_action': '4',
         'sms_so_ac_%s' % chkcookie: base_code,
         'sms_so_l_%s' % chkcookie: recipent,
@@ -83,7 +98,10 @@ def main():
     jar.set_cookie(cookie)
 
     # second step authentication
-    urllib2.urlopen("http://www.najdi.si/auth/login.jsp?sms=1&target_url=http%3A%2F%2Fwww.najdi.si%2Findex.jsp")
+    urllib2.urlopen(
+        "http://www.najdi.si/auth/login.jsp" +
+        "?sms=1&target_url=http%3A%2F%2Fwww.najdi.si%2Findex.jsp"
+    )
 
     # validate authentication
     req.add_header('X-Requested-With', 'XMLHttpRequest')
