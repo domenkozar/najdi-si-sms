@@ -58,10 +58,12 @@ class SMSSender(object):
         self.useragent = useragent or da
 
     def normalize_receiver(self, receiver_num):
-        """@todo: Docstring for normalize_receiver.
+        """
+        Split telephone number into area code and local number.
 
-        :receiver_num: @todo
-        :returns: @todo
+
+        :receiver_num: Telephone number string.
+        :returns: Tuple with area code and local number.
 
         """
         # 031 123 456
@@ -78,10 +80,11 @@ class SMSSender(object):
         return base_code, recipent
 
     def check_msg_leng(self, msg):
-        """@todo: Docstring for check_msg_leng.
+        """
+        Checks the message length raises an exception if more than 160 chars.
 
-        :msg: @todo
-        :returns: @todo
+        :msg: Message
+        :returns: Returns non modified msg
 
         """
         if len(msg) > 160:
@@ -90,11 +93,11 @@ class SMSSender(object):
         return msg
 
     def sent(self, receiver, msg):
-        """@todo: Docstring for sent.
+        """Sent the message.
 
-        :receiver: @todo
-        :msg: @todo
-        :returns: @todo
+        :receiver: Reciever number (only Slovenian supported)
+        :msg: SMS body message
+        :returns: True if sending succeeded, else False.
 
         """
 
