@@ -169,8 +169,10 @@ class SMSSender(object):
         d = json.loads(r.read())
         if d['dialog'] == 3:
             log.info('Uspelo. Preostalih smsov danes: %d',  d['msg_left'])
+            return True
         else:
             log.info('Napaka: %r', d)
+        return False
 
 
 if __name__ == '__main__':
