@@ -64,11 +64,15 @@ class SMSSender(object):
         :returns: @todo
 
         """
-        who = receiver_num
+        # 031 123 456
+        who = receiver_num.strip()
 
         # don't change
-        temp_recipent = who.strip().replace(' ', '')[3:]
+        # 031 123 456 => 123456
+        temp_recipent = who.replace(' ', '')[3:]
+        # 123456 => 123 456
         recipent = temp_recipent[:3] + ' ' + temp_recipent[3:]
+        # 031 123 456 =>  31
         base_code = int(who[1:3])
 
         return base_code, recipent
