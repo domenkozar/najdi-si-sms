@@ -1,15 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import json
-import time
-import urllib
-import urllib2
-import cookielib
 from optparse import OptionParser
 import logging
 
-import mechanize
+import requests
+from bs4 import BeautifulSoup
 
 logging.basicConfig()
 log = logging.getLogger("najdisi_sms")
@@ -71,11 +67,9 @@ class SMSSender(object):
 
         # don't change
         # 031 123 456 => 123456
-        temp_recipent = who.replace(' ', '')[3:]
-        # 123456 => 123 456
-        recipent = temp_recipent[:3] + ' ' + temp_recipent[3:]
-        # 031 123 456 =>  31
-        base_code = int(who[1:3])
+        recipent = who.replace(' ', '')[3:]
+        # 031 123 456 =>  031
+        base_code = who[:3]
 
         return base_code, recipent
 
@@ -103,80 +97,59 @@ class SMSSender(object):
 
         msg = self.check_msg_leng(msg)
 
-        base_code, recipent = self.normalize_receiver(receiver)
+        base_code, recipient = self.normalize_receiver(receiver)
 
         log.info('Omrezna koda: %s', base_code)
-        log.info('Prejemnik: %s', recipent)
+        log.info('Prejemnik: %s', recipient)
         log.info('Sporocilo: %s',  msg)
         log.info('Posiljam sms ...')
 
-        # handlers and headers
-        jar = cookielib.CookieJar()
-        handler = urllib2.HTTPCookieProcessor(jar)
-        handler2 = urllib2.HTTPHandler()
-        handler3 = urllib2.HTTPSHandler()
-        handler4 = mechanize.HTTPRefererProcessor()
-        opener = urllib2.build_opener(handler3, handler2, handler, handler4)
-        opener.addheaders = [
-            ("User-agent", self.useragent),
-        ]
-        urllib2.install_opener(opener)
+        s = requests.Session()
+        s.headers.update({'User-Agent': self.useragent})
 
-        # authentication
-        data = urllib.urlencode({
-            'j_username': self.username,
-            'j_password': self.password,
-            '_spring_security_remember_me': 'on',
-        })
-        urllib2.urlopen("https://id.najdi.si/j_spring_security_check", data)
-
-        # timestamp cookie
-        chkcookie = str(time.time()).replace('.', '')
-        while len(chkcookie) < 13:
-            chkcookie += '0'
-
-        data = urllib.urlencode({
-            'sms_action': '4',
-            'sms_so_ac_%s' % chkcookie: base_code,
-            'sms_so_l_%s' % chkcookie: recipent,
-            'myContacts': '',
-            'sms_message_%s' % chkcookie: msg.strip(),
-        })
-
-        req = urllib2.Request("http://www.najdi.si/sms/smsController.jsp?" + data)
-        cookie_tuple = jar._normalized_cookie_tuples([
-            [('chkcookie', chkcookie),
-            ('domain', 'www.najdi.si')],
-        ])
-        cookie = jar._cookie_from_cookie_tuple(cookie_tuple[0], req)
-        jar.set_cookie(cookie)
-        cookie_tuple = jar._normalized_cookie_tuples([
-            [('lganchor', 'freesms'),
-            ('domain', 'www.najdi.si')],
-        ])
-        cookie = jar._cookie_from_cookie_tuple(cookie_tuple[0], req)
-        jar.set_cookie(cookie)
-
-        # second step authentication
-        urllib2.urlopen(
-            "http://www.najdi.si/auth/login.jsp" +
-            "?sms=1&target_url=http%3A%2F%2Fwww.najdi.si%2Findex.jsp"
+        response = s.get(
+            'http://www.najdi.si/najdi.layoutnajdi.loginlink:login?t:ac=sms'
         )
 
-        # validate authentication
-        req.add_header('X-Requested-With', 'XMLHttpRequest')
-        urllib2.urlopen("http://www.najdi.si/auth/isPrincipalAlive.jsp")
+        soup = BeautifulSoup(response.text)
+        formdata_els = soup.findAll(attrs={'name': 't:formdata'})
+        formdata_value = formdata_els[0].attrs['value']
 
-        # send sms
-        r = urllib2.urlopen(req)
-        d = json.loads(r.read())
-        if d['dialog'] == 3:
-            log.info('Uspelo. Preostalih smsov danes: %d',  d['msg_left'])
-            return True
-        else:
-            log.info('Napaka: %r', d)
-        return False
+        data = {
+            't:formdata': formdata_value,
+            'jsecLogin': 'brodul',
+            'jsecPassword': 'HbI2tsiTPb6z'
+        }
+        response = s.post(
+            'http://www.najdi.si/prijava.jsecloginform',
+            data
+        )
 
+        soup = BeautifulSoup(response.text)
+        formdata_els = soup.findAll(attrs={'name': 't:formdata'})
+        formdata_vals = [formdata_el.attrs['value'] for formdata_el in formdata_els]
+        hidden_els = soup.findAll(attrs={'name': 'hidden'})
+        hidden_value = hidden_els[0].attrs['value']
+
+        data = {
+            't:ac': 'sms',
+            't:formdata': formdata_vals,
+            'areaCodeRecipient': base_code,
+            'phoneNumberRecipient': recipient,
+            'selectLru': '',
+            'hidden': hidden_value,
+            'name': '',
+            'areaCodeLru': '031',
+            'phoneNumberLru': '722959',
+            'text': msg,
+            't:submit': '["send","send"]',
+            't:zoneid': 'smsZone'
+        }
+        response = s.post(
+            "http://www.najdi.si/najdi.shortcutplaceholder.freesmsshortcut.smsform",
+            data
+        )
+        soup = BeautifulSoup(response.text)
 
 if __name__ == '__main__':
     main()
