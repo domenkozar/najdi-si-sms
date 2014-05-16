@@ -117,8 +117,8 @@ class SMSSender(object):
 
         data = {
             't:formdata': formdata_value,
-            'jsecLogin': 'brodul',
-            'jsecPassword': 'HbI2tsiTPb6z'
+            'jsecLogin': self.username,
+            'jsecPassword': self.password
         }
         response = s.post(
             'http://www.najdi.si/prijava.jsecloginform',
