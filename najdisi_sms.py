@@ -127,8 +127,10 @@ class SMSSender(object):
         )
 
         soup = BeautifulSoup(response.text)
+
         formdata_els = soup.findAll(attrs={'name': 't:formdata'})
         formdata_vals = [formdata_el.attrs['value'] for formdata_el in formdata_els]
+
         hidden_els = soup.findAll(attrs={'name': 'hidden'})
         hidden_value = hidden_els[0].attrs['value']
 
