@@ -118,6 +118,7 @@ class SMSSender(object):
         data = {
             't:formdata': formdata_value,
             'jsecLogin': self.username,
+            'jsecRememberMe': 'on',
             'jsecPassword': self.password
         }
         response = s.post(
@@ -139,15 +140,14 @@ class SMSSender(object):
             'selectLru': '',
             'hidden': hidden_value,
             'name': '',
-            'areaCodeLru': '031',
-            'phoneNumberLru': '722959',
             'text': msg,
             't:submit': '["send","send"]',
             't:zoneid': 'smsZone'
         }
         response = s.post(
             "http://www.najdi.si/najdi.shortcutplaceholder.freesmsshortcut.smsform",
-            data
+            data,
+            headers={"X-Requested-With": "XMLHttpRequest"}
         )
         soup = BeautifulSoup(response.text)
 
