@@ -12,8 +12,42 @@ log = logging.getLogger("najdisi_sms")
 log.setLevel(logging.INFO)
 
 
+class MissingSettingsError(TypeError):
+    pass
+
+
+class NoPasswordError(MissingSettingsError):
+    def __str__(self):
+        return "Please set the password"
+
+
+class NoUsernameError(MissingSettingsError):
+    def __str__(self):
+        return "Please set the username"
+
+
+class NoMsgError(MissingSettingsError):
+    def __str__(self):
+        return "Please set the message"
+
+
+class NoRecipientpNumError(MissingSettingsError):
+    def __str__(self):
+        return "Please set the recipient number"
+
+
+def validate_attrs(obj, d):
+    """Check if obj has the attr equal to the key of d,
+    otherwise raise Exception (the key value of d)
+
+    """
+    for k, v in d.iteritems():
+        if not hasattr(obj, k):
+            raise v()
+
+
 def main():
-    parser = OptionParser(usage="%prog [options] who msg")
+    parser = OptionParser(usage="%prog -u username -p password who msg")
     parser.add_option(
         "-u",
         "--username",
@@ -35,7 +69,14 @@ def main():
         + "Gecko/20100401 Firefox/3.6.3"
     )
     (options, args) = parser.parse_args()
-    who = args.pop(0)
+    for option in ('username', 'password'):
+        if not hasattr(options, option):
+            parser.error('%s not given' % option.upper())
+    try:
+        who = args.pop(0)
+    except IndexError:
+        raise NoRecipientpNumError()
+
     msg = ' '.join(args)
 
     sender = SMSSender(options.username, options.password, options.useragent)
@@ -52,6 +93,12 @@ class SMSSender(object):
         da = "Mozilla/5.0 (Windows; U; Windows NT 6.1; es-ES; rv:1.9.2.3)" \
             + "Gecko/20100401 Firefox/3.6.3"
         self.useragent = useragent or da
+
+        self.error_d = {
+            'username': NoUsernameError,
+            'password': NoPasswordError,
+        }
+        validate_attrs(self, self.error_d)
 
     def normalize_receiver(self, receiver_num):
         """
@@ -94,6 +141,11 @@ class SMSSender(object):
         :returns: True if sending succeeded, else False.
 
         """
+
+        if not receiver:
+            raise NoRecipientpNumError()
+        if not msg:
+            raise NoMsgError()
 
         msg = self.check_msg_leng(msg)
 
