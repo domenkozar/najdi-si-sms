@@ -21,7 +21,8 @@ setup(name='najdisi-sms',
       zip_safe=False,
       install_requires=[
           # -*- Extra requirements: -*-
-          'mechanize',
+          'requests',
+          'beautifulsoup4',
       ],
       entry_points="""
       [console_scripts]
